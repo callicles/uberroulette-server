@@ -9,9 +9,9 @@ var User = require('../models/user.js');
 
 var router = express.Router();
 
-router.get('/auth/uber', passport.authenticate('uber'));
+router.get('/uber', passport.authenticate('uber'));
 
-router.get('/auth/uber/callback', passport.authenticate('uber'),
+router.get('/uber/callback', passport.authenticate('uber'),
     function(req, res) {
         res.json(req.user)
     });

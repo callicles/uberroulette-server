@@ -4,10 +4,13 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var passport = require('passport');
+var session = require('express-session')
 
 // Routes
 var routes = require('./routes/index');
 var invite = require('./routes/invite');
+var auth = require('./routes/auth');
 
 var mongoose = require('mongoose');
 
@@ -32,9 +35,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+  resave: false,
+  saveUninitialized: false,
+  secret: 'alkhA;SLDKa;lkds;alKSDNALKSDN'
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use('/', routes);
 app.use('/invite', invite);
+app.use('/auth', auth);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -68,15 +79,9 @@ app.use(function(err, req, res, next) {
 });
 
 // Authentication with uber
-var passport = require('passport'),
-    uberStrategy = require('passport-uber').Strategy,
+var uberStrategy = require('passport-uber').Strategy,
     User = require('./models/user.js'),
-    Invite = require('./models/invite.js'),
-    auth = require('./routes/auth');
-
-app.use('/auth', auth);
-app.use(passport.initialize());
-app.use(passport.session());
+    Invite = require('./models/invite.js');
 
 passport.use(new uberStrategy({
       clientID: process.env.UBER_ID,
@@ -102,6 +107,7 @@ passport.use(new uberStrategy({
                 place.friendFullName = invite.fullName;
                 return place
               });
+
             }
 
             User.create(userToCreate, function(err, user){
@@ -115,5 +121,12 @@ passport.use(new uberStrategy({
     }
 ));
 
+passport.serializeUser(function(user, done) {
+  done(null, user);
+});
+
+passport.deserializeUser(function(user, done) {
+  done(null, user);
+});
 
 module.exports = app;
