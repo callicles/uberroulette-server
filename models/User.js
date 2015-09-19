@@ -9,6 +9,7 @@ var UserSchema = new mongoose.Schema({
     lastName: String,
     email: String,
     picture: String,
+    accessToken: String,
     uberId: String,
     listOfPlaces: [{
         friendFullName: String,
