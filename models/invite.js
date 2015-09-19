@@ -6,7 +6,7 @@ var mongoose = require('mongoose');
 
 var InviteSchema = new mongoose.Schema({
     userEmail: String,
-    username: String,
+    fullName: String,
     inviteeEmail: String,
     note: String,
     listOfPlaces: [{

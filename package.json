@@ -14,6 +14,8 @@
     "hbs": "~3.1.0",
     "mongoose": "^4.1.7",
     "morgan": "~1.6.1",
+    "passport": "^0.3.0",
+    "passport-uber": "0.0.1",
     "sendgrid": "^1.9.2",
     "serve-favicon": "~2.3.0"
   }

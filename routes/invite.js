@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 var mongoose = require('mongoose');
-var Invite = require('../models/Invite.js');
+var Invite = require('../models/invite.js');
 
 var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
 

@@ -5,6 +5,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+// Routes
 var routes = require('./routes/index');
 var invite = require('./routes/invite');
 
@@ -65,6 +66,54 @@ app.use(function(err, req, res, next) {
     error: {}
   });
 });
+
+// Authentication with uber
+var passport = require('passport'),
+    uberStrategy = require('passport-uber').Strategy,
+    User = require('./models/user.js'),
+    Invite = require('./models/invite.js'),
+    auth = require('./routes/auth');
+
+app.use('/auth', auth);
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new uberStrategy({
+      clientID: process.env.UBER_ID,
+      clientSecret: process.env.UBER_SECRET,
+      callbackURL: "http://localhost:3000/auth/uber/callback"
+    },
+    function(accessToken, refreshToken, profile, done) {
+
+      User.findOne({uberId: profile.id}, function (err, user){
+        if (user == null){
+          var userToCreate = {
+            uberId: profile.id,
+            firstName: profile.first_name,
+            lastName: profile.last_name,
+            email: profile.email,
+            picture: profile.picture
+          };
+
+          Invite.findOne({inviteeEmail: profile.email}, function(err, invite){
+
+            if (invite != null){
+              userToCreate.listOfPlaces = invite.listOfPlaces.map(function(place){
+                place.friendFullName = invite.fullName;
+                return place
+              });
+            }
+
+            User.create(userToCreate, function(err, user){
+              return done(err, user)
+            })
+          })
+        } else {
+          return done(err, user);
+        }
+      });
+    }
+));
 
 
 module.exports = app;
