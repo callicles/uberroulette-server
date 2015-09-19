@@ -14,8 +14,8 @@ var UserSchema = new mongoose.Schema({
     listOfPlaces: [{
         friendFullName: String,
         name: String,
-        latitude: Number,
-        longitude: Number,
+        end_latitude: Number,
+        end_longitude: Number,
         message: String,
         category: String
     }],

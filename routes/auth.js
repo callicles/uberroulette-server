@@ -11,18 +11,19 @@ var User = require('../models/user.js');
 var router = express.Router();
 
 router.post('/uber', function(req, res){
-    User.findOne({uberId: req.json.uber_id}, function (err, user){
+
+    User.findOne({uberId: req.body.uberId}, function (err, user){
         if (user == null){
             var userToCreate = {
-                accessToken: req.json.access_token,
-                uberId: req.json.uber_id,
-                firstName: req.json.first_name,
-                lastName: req.json.last_name,
-                email: req.json.email,
-                picture: req.json.picture
+                accessToken: req.body.accessToken,
+                uberId: req.body.uberId,
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                email: req.body.email,
+                picture: req.body.picture
             };
 
-            Invite.findOne({inviteeEmail: profile.email}, function(err, invite){
+            Invite.findOne({inviteeEmail: req.body.email}, function(err, invite){
 
                 if (invite != null){
                     userToCreate.listOfPlaces = invite.listOfPlaces.map(function(place){
@@ -36,7 +37,16 @@ router.post('/uber', function(req, res){
                 })
             })
         } else {
-            res.json(user)
+            User.update({uberId: req.body.uberId}, {
+                accessToken: req.body.accessToken,
+                uberId: req.body.uberId,
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                email: req.body.email,
+                picture: req.body.picture
+            }, function(err, user){
+                res.json(user);
+            })
         }
     });
 });
