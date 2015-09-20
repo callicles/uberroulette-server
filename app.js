@@ -15,7 +15,7 @@ var mongoose = require('mongoose');
 
 var mongoURL = 'mongodb://localhost/uberRoulette'
 if (process.env.MONGOLAB_URI){
-  mongoURL = process.env.MONGO_URL
+  mongoURL = process.env.MONGOLAB_URI
 }
 
 mongoose.connect(mongoURL, function(err) {
