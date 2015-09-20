@@ -13,7 +13,12 @@ var ride = require('./routes/ride');
 
 var mongoose = require('mongoose');
 
-mongoose.connect('mongodb://localhost/uberRoulette', function(err) {
+var mongoURL = 'mongodb://localhost/uberRoulette'
+if (process.env.MONGO_URL){
+  mongoURL = process.env.MONGO_URL
+}
+
+mongoose.connect(mongoURL, function(err) {
   if(err) {
     console.log('connection error', err);
   } else {
