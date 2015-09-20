@@ -6,7 +6,7 @@ var request = require('request-promise');
 var Promise = require('bluebird');
 var _ = require('lodash');
 
-var User = require('../models/User.js');
+var User = require('../models/user.js');
 
 // Minimum ride length
 var MIN_RIDE_LENGTH = 1;
