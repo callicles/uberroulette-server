@@ -6,7 +6,7 @@ var request = require('request-promise');
 var Promise = require('bluebird');
 var _ = require('lodash');
 
-var User = require('../models/user.js');
+var User = require('../models/User.js');
 
 // Minimum ride length
 var MIN_RIDE_LENGTH = 1;
@@ -21,6 +21,8 @@ console.log(" Using the Uber API: ", uberAPI);
 
 /* get a user rides */
 router.post('/', function(req, res) {
+
+    console.log(req.body)
 
     User.findOne({uberId: req.body.uberId})
         .populate('listOfPlaces')
