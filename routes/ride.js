@@ -5,94 +5,137 @@ var express = require('express');
 var request = require('request-promise');
 var Promise = require('bluebird');
 var _ = require('lodash');
-var router = express.Router();
 
+var User = require('../models/user.js');
+
+// Minimum ride length
+var MIN_RIDE_LENGTH = 1;
+var router = express.Router();
 var uberAPI = 'https://api.uber.com/v1/';
+
 if (process.env.DEBUG){
     uberAPI = 'https://sandbox-api.uber.com/v1/'
 }
 
 console.log(" Using the Uber API: ", uberAPI);
 
-// Minimum ride length
-var MIN_RIDE_LENGTH = 1;
-
-
 /* get a user rides */
 router.post('/', function(req, res) {
 
-    var
-        estimates = [];
+    User.findOne({uberId: req.body.uberId})
+        .populate('listOfPlaces')
+        .exec(function(err, user){
 
-    for (var i = 0; i < req.json.location_list.length ; i++){
-        estimates.push(req.get({
-            url: uberAPI + 'estimates/price',
-            qs: {
-                start_latitude: req.body.start_latitude,
-                start_longitude: req.body.start_longitude,
-                end_latitude: req.body.location_list[i].end_latitude,
-                end_longitude: req.body.location_list[i].end_longitude
-            },
-            auth: {
-                bearer: req.body.accessToken
+        if (user != null){
+            var estimates = [];
+
+            user = user.toObject();
+
+            for (var i = 0; i < user.listOfPlaces.length ; i++){
+
+                var reqInst = request.get({
+                    url: uberAPI + 'estimates/price',
+                    json: true,
+                    qs: {
+                        start_latitude: req.body.start_latitude,
+                        start_longitude: req.body.start_longitude,
+                        end_latitude: user.listOfPlaces[i].latitude,
+                        end_longitude: user.listOfPlaces[i].longitude
+                    },
+                    auth: {
+                        bearer: req.body.accessToken
+                    }
+                }).promise();
+
+                estimates.push(reqInst);
             }
-        }))
-    }
+            return Promise.settle(estimates).then(function(results){
 
-    return Promise.settle(estimates).then(function(results){
+                var rideEstimates = [];
 
-        return _(results)
-            .filter(function(res){
+                _.forEach(results, function(res, i){
 
-                var rideEstimate = {};
+                    if (!res.isFulfilled()){
+                        console.error('An estimate request was rejected, ', user.listOfPlaces[i].name)
+                        console.error(res.reason())
+                    } else {
+                        rideEstimates.push([]);
 
-                if (!res.isFulfilled()){
-                    console.error('An estimate request was rejected, ', req.json.location_list[i].name)
+                        _.forEach(res.value().prices, function(rideEstimate){
+
+                            if (rideEstimate.high_estimate <= req.body.max_dollar &&
+                                rideEstimate.distance >= MIN_RIDE_LENGTH &&
+                                rideEstimate.distance <= req.body.max_radius
+                            ) {
+
+                                rideEstimate.friendFullName = user.listOfPlaces[i].friendFullName;
+                                rideEstimate.name = user.listOfPlaces[i].name;
+                                rideEstimate.message = user.listOfPlaces[i].message;
+                                rideEstimate.end_latitude = user.listOfPlaces[i].latitude;
+                                rideEstimate.end_longitude = user.listOfPlaces[i].longitude;
+
+                                rideEstimates[rideEstimates.length - 1].push(rideEstimate)
+                            }
+                        });
+                    }
+
+                });
+
+                return _.min(_.sample(rideEstimates), function(estimate){
+                    return estimate.high_estimate;
+                });
+
+            }).then(function(selectedRide){
+                console.log(selectedRide);
+
+                if (!_.isEmpty(selectedRide)){
+                    /*
+                    return request.post({
+                        url: uberAPI + 'requests',
+                        header: {
+                            "Content-type": "application/json"
+                        },
+                        json: true,
+                        body: {
+                            product_id: selectedRide.product_id,
+                            start_latitude: req.body.start_latitude,
+                            start_longitude: req.body.start_longitude,
+                            end_latitude: selectedRide.end_latitude,
+                            end_longitude: selectedRide.end_longitude
+                        },
+                        auth: {
+                            bearer: req.body.accessToken
+                        }
+                    }).then(function(rideRes){
+                        rideRes.friendFullName =  selectedRide.friendFullName;
+                        rideRes.name =  selectedRide.name;
+                        rideRes.message =  selectedRide.message;
+
+                        return res.json([rideRes]);
+                    }).then(function(){
+
+                    }).catch(function(e){
+                        console.error(e)
+                    });*/
+
+                    res.json({
+                        friendFullName: selectedRide.friendFullName,
+                        name: selectedRide.name,
+                        message: selectedRide.message,
+                        "request_id": "852b8fdd-4369-4659-9628-e122662ad257",
+                        "status": "processing",
+                        "vehicle": "Mercedes 67",
+                        "driver": "Mario Luchini",
+                        "location": "111 th Avenue New York, 10027",
+                        "eta": 5,
+                        "surge_multiplier": null
+                    })
                 } else {
-                    rideEstimate = res.value();
-                    rideEstimate.friendFullName =  req.json.location_list[i].friendFullName;
-                    rideEstimate.name =  req.json.location_list[i].name;
-                    rideEstimate.message =  req.json.location_list[i].message;
-                    rideEstimate.end_latitude =  req.json.location_list[i].end_latitude;
-                    rideEstimate.end_longitude =  req.json.location_list[i].end_longitude;
+                    return res.json([]);
                 }
-
-                return res.isFulfilled() &&
-                    _.includes(rideEstimate.prices, function(price){
-                        return price.high_estimate <= req.body.max_dollar
-                    }) &&
-                    rideEstimate.prices[0].distance >= MIN_RIDE_LENGTH &&
-                    rideEstimate.prices[0].distance <= req.body.max_radius
-
             })
-            .sample(1)
-            .min('high_estimate')
-    }).then(function(selectedRide){
-        if (!_.isEmpty(selectedRide)){
-            return req.post({
-                url: uberAPI + '/requests',
-                json: true,
-                body: {
-                    product_id: selectedRide.product_id,
-                    start_latitude: req.body.start_latitude,
-                    start_longitude: req.body.start_longitude,
-                    end_latitude: selectedRide.end_latitude,
-                    end_longitude: selectedRide.end_longitude
-                },
-                auth: {
-                    bearer: req.body.accessToken
-                }
-            }).then(function(rideRes){
-                rideRes.friendFullName =  selectedRide.friendFullName;
-                rideRes.name =  selectedRide.name;
-                rideRes.message =  selectedRide.message;
-
-                return res.json([rideRes]);
-            }).then(function(){
-
-            });
         } else {
-            return res.json([]);
+            res.status(401).send('Unauthorized');
         }
     })
 });

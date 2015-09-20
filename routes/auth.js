@@ -12,6 +12,8 @@ var router = express.Router();
 
 router.post('/uber', function(req, res){
 
+    console.log(req.body)
+
     User.findOne({uberId: req.body.uberId}, function (err, user){
         if (user == null){
             var userToCreate = {
@@ -25,13 +27,15 @@ router.post('/uber', function(req, res){
 
             Invite.findOne({inviteeEmail: req.body.email}, function(err, invite){
 
+                console.log(invite)
+
                 if (invite != null){
                     userToCreate.listOfPlaces = invite.listOfPlaces.map(function(place){
                         place.friendFullName = invite.fullName;
                         return place
                     });
                 }
-
+                console.log('Creating User');
                 User.create(userToCreate, function(err, user){
                    res.json(user)
                 })

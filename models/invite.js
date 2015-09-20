@@ -8,13 +8,11 @@ var InviteSchema = new mongoose.Schema({
     userEmail: String,
     fullName: String,
     inviteeEmail: String,
-    note: String,
     listOfPlaces: [{
         name: String,
         latitude: Number,
         longitude: Number,
-        message: String,
-        category: String
+        message: String
     }],
     sentAt: { type: Date, default: Date.now }
 });
