@@ -13,7 +13,8 @@ var ride = require('./routes/ride');
 
 var mongoose = require('mongoose');
 
-var mongoURL = 'mongodb://localhost/uberRoulette'
+var mongoURL = 'mongodb://localhost/uberRoulette';
+
 if (process.env.MONGOLAB_URI){
   mongoURL = process.env.MONGOLAB_URI
 }
