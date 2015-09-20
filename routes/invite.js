@@ -8,9 +8,7 @@ var sendgrid  = require('sendgrid')(process.env.SENDGRID_KEY);
 
 /* Post invite in the db listing. */
 router.post('/', function(req, res, next) {
-
-  console.log(req.body);
-
+  
   Invite.create(req.body, function (err, invite) {
     if (err) {
       return next(err);
